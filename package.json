@@ -1,0 +1,11 @@
+{
+  "name": "super-auto-ai",
+  "version": "1.0.0",
+  "description": "A deterministic, replayable autobattler inspired by Super Auto Pets",
+  "type": "module",
+  "scripts": {
+    "start": "npx --yes serve . --port 3000 --no-clipboard",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest --testPathPattern=tests/"
+  },
+  "devDependencies": {}
+}

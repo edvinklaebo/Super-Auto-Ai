@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Super Auto AI</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a18;
+      color: #ccc;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 24px 16px;
+      gap: 14px;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      color: #fff;
+      letter-spacing: 0.05em;
+    }
+
+    canvas {
+      border: 2px solid #1e1e3c;
+      border-radius: 10px;
+      box-shadow: 0 0 40px rgba(74, 144, 217, 0.15);
+      display: block;
+      max-width: 100%;
+    }
+
+    /* ── Controls ──────────────────────────────────────────── */
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    button {
+      padding: 9px 18px;
+      border: 1px solid #333;
+      border-radius: 7px;
+      background: #1a1a2e;
+      color: #ddd;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    button:hover { background: #252545; border-color: #555; }
+
+    #runBattle    { background: #0e3a60; border-color: #4a90d9; color: #fff; }
+    #runBattle:hover { background: #154a78; }
+
+    #replayBattle { background: #0e4020; border-color: #2ecc71; color: #fff; }
+    #replayBattle:hover { background: #155228; }
+
+    #stepInfo {
+      font-size: 12px;
+      color: #666;
+      min-width: 110px;
+      text-align: center;
+    }
+
+    /* ── Log panel ─────────────────────────────────────────── */
+    #log {
+      width: 800px;
+      max-width: 100%;
+      max-height: 180px;
+      overflow-y: auto;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid #1e1e3c;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-family: 'Courier New', monospace;
+      line-height: 1.6;
+      color: #aaa;
+    }
+    #log .status    { margin-bottom: 6px; font-weight: bold; font-size: 13px; }
+    #log .status.ok  { color: #2ecc71; }
+    #log .status.err { color: #e74c3c; }
+
+    /* ── Architecture key ──────────────────────────────────── */
+    #arch {
+      width: 800px;
+      max-width: 100%;
+      font-size: 11px;
+      color: #555;
+      line-height: 1.7;
+      border-top: 1px solid #1a1a2e;
+      padding-top: 10px;
+    }
+    #arch span { color: #3a3a6a; }
+  </style>
+</head>
+<body>
+  <h1>⚔️ Super Auto AI</h1>
+
+  <canvas id="battleCanvas" width="800" height="500"></canvas>
+
+  <div id="controls">
+    <button id="runBattle">🎲 Run Battle</button>
+    <button id="stepBack">◀ Step Back</button>
+    <span   id="stepInfo">–</span>
+    <button id="stepForward">Step Forward ▶</button>
+    <button id="replayBattle">🔄 Replay (determinism test)</button>
+  </div>
+
+  <div id="log"><!-- populated by app/main.js --></div>
+
+  <div id="arch">
+    <span>Architecture:</span>
+    core/RNG.js · core/EventBus.js · core/Unit.js · core/Ability.js ·
+    core/BattleState.js · core/BattleSystem.js · core/Replay.js ·
+    core/abilities/BerserkerAbility.js · rendering/CanvasRenderer.js · app/main.js
+  </div>
+
+  <script type="module" src="app/main.js"></script>
+</body>
+</html>
