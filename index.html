@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Poison Simulator – Path of Exile</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<h1>☠ Poison Simulator</h1>
+<p class="subtitle">Path of Exile – Poison Mechanics</p>
+
+<div class="app">
+
+  <!-- ── Controls ─────────────────────────────────────────────────────── -->
+  <aside class="panel controls">
+    <div class="panel-title">Parameters</div>
+
+    <!-- Hit Damage -->
+    <div class="param">
+      <div class="param-header">
+        <label class="param-label" for="sDamage">Hit Damage</label>
+        <span class="param-value" id="sDamageVal">500</span>
+      </div>
+      <input type="range" id="sDamage"
+             min="50" max="5000" step="10" value="500" />
+      <span class="param-desc">Physical + Chaos flat damage per hit</span>
+    </div>
+
+    <!-- Attack Rate -->
+    <div class="param">
+      <div class="param-header">
+        <label class="param-label" for="sRate">Attack Rate</label>
+        <span class="param-value" id="sRateVal">3.50 APS</span>
+      </div>
+      <input type="range" id="sRate"
+             min="0.5" max="12" step="0.25" value="3.5" />
+      <span class="param-desc">Attacks per second (APS)</span>
+    </div>
+
+    <!-- Poison Chance -->
+    <div class="param">
+      <div class="param-header">
+        <label class="param-label" for="sChance">Poison Chance</label>
+        <span class="param-value" id="sChanceVal">100%</span>
+      </div>
+      <input type="range" id="sChance"
+             min="0" max="1" step="0.01" value="1" />
+      <span class="param-desc">Chance to poison on hit (capped at 100%)</span>
+    </div>
+
+    <!-- Poison Duration -->
+    <div class="param">
+      <div class="param-header">
+        <label class="param-label" for="sDuration">Poison Duration</label>
+        <span class="param-value" id="sDurationVal">2.0s</span>
+      </div>
+      <input type="range" id="sDuration"
+             min="0.5" max="8" step="0.1" value="2" />
+      <span class="param-desc">Seconds each poison stack lasts</span>
+    </div>
+
+    <!-- Poison Scaling -->
+    <div class="param">
+      <div class="param-header">
+        <label class="param-label" for="sScaling">Poison Scaling</label>
+        <span class="param-value" id="sScalingVal">30%</span>
+      </div>
+      <input type="range" id="sScaling"
+             min="0.05" max="1.5" step="0.01" value="0.3" />
+      <span class="param-desc">% of hit damage dealt as poison DPS (base: 30%)</span>
+    </div>
+
+    <!-- Buttons -->
+    <div class="sim-controls">
+      <button class="btn" id="btnRun">▶ Run</button>
+      <button class="btn btn-reset" id="btnReset">↺ Reset</button>
+    </div>
+
+    <!-- Mechanics Note -->
+    <div style="margin-top:14px; padding:10px; background:#111; border:1px solid #2a2a2a; border-radius:4px;">
+      <div class="panel-title" style="margin-bottom:8px;">PoE Mechanics</div>
+      <p style="font-size:0.7rem; color:#7a6f5a; line-height:1.6;">
+        Each hit applies <em style="color:#9acd32">at most one</em> poison stack.
+        Base poison DPS = 30% of combined Physical &amp; Chaos damage.
+        Poison stacks are unlimited. Only Chaos resistance mitigates poison damage.
+      </p>
+    </div>
+  </aside>
+
+  <!-- ── Right column ──────────────────────────────────────────────────── -->
+  <div class="graphs">
+
+    <!-- Stats row -->
+    <div class="panel">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="statDps">0</div>
+          <div class="stat-label">Poison DPS</div>
+        </div>
+        <div class="stat-card stacks">
+          <div class="stat-value" id="statStacks">0</div>
+          <div class="stat-label">Active Stacks</div>
+        </div>
+        <div class="stat-card hits">
+          <div class="stat-value" id="statHits">0</div>
+          <div class="stat-label">Total Hits</div>
+        </div>
+        <div class="stat-card time">
+          <div class="stat-value" id="statTime">0.0s</div>
+          <div class="stat-label">Sim Time</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DPS + Stack graph -->
+    <div class="panel" style="padding:10px;">
+      <div class="panel-title">
+        DPS &amp; Stack Count
+        <span style="color:#7a6f5a; font-size:0.65rem; margin-left:6px;">
+          (last 12s · hover for values)
+        </span>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="mainCanvas" height="180"></canvas>
+      </div>
+    </div>
+
+  </div><!-- /graphs -->
+</div><!-- /app -->
+
+<div id="tooltip"></div>
+
+<script src="simulator.js"></script>
+</body>
+</html>
