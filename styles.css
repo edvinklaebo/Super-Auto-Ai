@@ -1,0 +1,280 @@
+/* Path of Exile – Poison Simulator */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0e0e0e;
+  --surface: #1a1a1a;
+  --border: #333;
+  --accent: #6abf3e;        /* poison green */
+  --accent2: #9acd32;
+  --dps-color: #6abf3e;
+  --stack-color: #e8a020;
+  --text: #d4c5a9;
+  --text-dim: #7a6f5a;
+  --red: #c0392b;
+  --font: 'Segoe UI', system-ui, sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+  padding: 16px;
+}
+
+h1 {
+  text-align: center;
+  font-size: 1.5rem;
+  letter-spacing: 0.08em;
+  color: var(--accent2);
+  text-shadow: 0 0 12px rgba(106, 191, 62, 0.5);
+  margin-bottom: 20px;
+}
+
+.subtitle {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-top: -16px;
+  margin-bottom: 20px;
+  letter-spacing: 0.05em;
+}
+
+/* ── Layout ─────────────────────────────────────────────── */
+.app {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  grid-template-rows: auto auto;
+  gap: 16px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+@media (max-width: 720px) {
+  .app {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Panel base ─────────────────────────────────────────── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 16px;
+}
+
+.panel-title {
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+}
+
+/* ── Controls ───────────────────────────────────────────── */
+.controls {
+  grid-row: 1 / 3;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.param {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.param-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.param-label {
+  font-size: 0.82rem;
+  color: var(--text);
+}
+
+.param-value {
+  font-size: 0.82rem;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  min-width: 48px;
+  text-align: right;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+input[type="range"]:hover::-webkit-slider-thumb {
+  background: var(--accent2);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: none;
+}
+
+.param-desc {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+/* ── Sim buttons ────────────────────────────────────────── */
+.sim-controls {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.btn {
+  flex: 1;
+  padding: 7px 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #252525;
+  color: var(--text);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  letter-spacing: 0.04em;
+}
+
+.btn:hover {
+  background: #2e2e2e;
+  border-color: var(--accent);
+  color: var(--accent2);
+}
+
+.btn.active {
+  background: rgba(106,191,62,0.15);
+  border-color: var(--accent);
+  color: var(--accent2);
+}
+
+.btn-reset {
+  border-color: #555;
+}
+
+.btn-reset:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+/* ── Stats ──────────────────────────────────────────────── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 720px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.stat-card {
+  background: #111;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px;
+  text-align: center;
+}
+
+.stat-card .stat-value {
+  font-size: 1.35rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  line-height: 1.2;
+}
+
+.stat-card .stat-label {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.stat-card.stacks .stat-value { color: var(--stack-color); }
+.stat-card.hits .stat-value   { color: #7ec8e3; }
+.stat-card.time .stat-value   { color: #b0a090; }
+
+/* ── Canvas area ────────────────────────────────────────── */
+.graphs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.canvas-wrap {
+  position: relative;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #0a0a0a;
+}
+
+.canvas-label {
+  position: absolute;
+  top: 6px;
+  left: 10px;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  pointer-events: none;
+}
+
+.canvas-label span {
+  color: var(--accent);
+}
+
+/* ── Tooltip ────────────────────────────────────────────── */
+#tooltip {
+  position: fixed;
+  padding: 5px 9px;
+  background: rgba(20,20,20,0.95);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--text);
+  pointer-events: none;
+  display: none;
+  z-index: 100;
+}
