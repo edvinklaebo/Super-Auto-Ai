@@ -405,29 +405,83 @@ function formatNumber(n) {
   const elTtk     = document.getElementById('statTtk');
 
   // ── Sliders ────────────────────────────────────────────────────────────────
+  // toInput : converts the raw state value to the number shown in the input box.
+  // fromInput: converts the number typed by the user back to the raw state value.
   const sliders = [
-    { id: 'sDamage',       key: 'hitDamage',         fmt: v => Math.round(v).toString() },
-    { id: 'sRate',         key: 'attackRate',         fmt: v => v.toFixed(2) + ' APS' },
-    { id: 'sChance',       key: 'poisonChance',       fmt: v => Math.round(v * 100) + '%' },
-    { id: 'sDuration',     key: 'poisonDuration',     fmt: v => v.toFixed(1) + 's' },
-    { id: 'sScaling',      key: 'poisonScaling',      fmt: v => (v * 100).toFixed(0) + '%' },
-    { id: 'sDotMult',      key: 'dotMultiplier',      fmt: v => v.toFixed(2) + 'x' },
-    { id: 'sIncreasedDot', key: 'increasedDot',       fmt: v => '+' + Math.round(v * 100) + '%' },
-    { id: 'sIncreasedDur', key: 'increasedDuration',  fmt: v => '+' + Math.round(v * 100) + '%' },
+    {
+      id: 'sDamage', key: 'hitDamage',
+      toInput:   v => Math.round(v),
+      fromInput: v => v,
+    },
+    {
+      id: 'sRate', key: 'attackRate',
+      toInput:   v => v,
+      fromInput: v => v,
+    },
+    {
+      // State stores 0–1; input shows 0–100 (percent)
+      id: 'sChance', key: 'poisonChance',
+      toInput:   v => Math.round(v * 100),
+      fromInput: v => v / 100,
+    },
+    {
+      id: 'sDuration', key: 'poisonDuration',
+      toInput:   v => v,
+      fromInput: v => v,
+    },
+    {
+      // State stores 0.05–1.5; input shows 5–150 (percent)
+      id: 'sScaling', key: 'poisonScaling',
+      toInput:   v => +(v * 100).toFixed(0),
+      fromInput: v => v / 100,
+    },
+    {
+      id: 'sDotMult', key: 'dotMultiplier',
+      toInput:   v => v,
+      fromInput: v => v,
+    },
+    {
+      // State stores 0–6; input shows 0–600 (percent)
+      id: 'sIncreasedDot', key: 'increasedDot',
+      toInput:   v => Math.round(v * 100),
+      fromInput: v => v / 100,
+    },
+    {
+      // State stores 0–3; input shows 0–300 (percent)
+      id: 'sIncreasedDur', key: 'increasedDuration',
+      toInput:   v => Math.round(v * 100),
+      fromInput: v => v / 100,
+    },
   ];
 
-  sliders.forEach(({ id, key, fmt }) => {
-    const input = /** @type {HTMLInputElement} */ (document.getElementById(id));
-    const display = document.getElementById(id + 'Val');
-    if (!input || !display) return;
+  sliders.forEach(({ id, key, toInput, fromInput }) => {
+    const rangeInput = /** @type {HTMLInputElement} */ (document.getElementById(id));
+    const numInput   = /** @type {HTMLInputElement} */ (document.getElementById(id + 'Val'));
+    if (!rangeInput || !numInput) return;
 
-    // init display from state default
-    display.textContent = fmt(state[key]);
+    // Initialise the number input from current state.
+    numInput.value = String(toInput(state[key]));
 
-    input.addEventListener('input', () => {
-      const raw = parseFloat(input.value);
+    // Slider → number input (real-time while dragging).
+    rangeInput.addEventListener('input', () => {
+      const raw = parseFloat(rangeInput.value);
       state[key] = raw;
-      display.textContent = fmt(raw);
+      numInput.value = String(toInput(raw));
+    });
+
+    // Number input → slider (committed on Enter or blur).
+    numInput.addEventListener('change', () => {
+      const inputVal = parseFloat(numInput.value);
+      if (isNaN(inputVal)) return;
+      const raw = fromInput(inputVal);
+      // Clamp to the slider's own min/max so state stays valid.
+      const clampedRaw = Math.max(
+        parseFloat(rangeInput.min),
+        Math.min(parseFloat(rangeInput.max), raw),
+      );
+      state[key]       = clampedRaw;
+      rangeInput.value = String(clampedRaw);
+      numInput.value   = String(toInput(clampedRaw));
     });
   });
 
