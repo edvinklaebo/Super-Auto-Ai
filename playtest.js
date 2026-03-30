@@ -5,7 +5,6 @@
  *   WASD / Arrow keys – move the player
  *   Left-click hold   – attack (blocks movement while held)
  *
- * Enemy: stationary Patchwork Golem with a large HP pool.
  */
 (function playtestMain() {
   'use strict';
@@ -358,7 +357,7 @@
     ctx.fillStyle    = '#c0392b';
     ctx.font         = `bold ${10 * dpr}px 'Segoe UI', sans-serif`;
     ctx.textBaseline = 'top';
-    ctx.fillText('Patchwork Golem', cx, cy + r + 6 * dpr);
+    ctx.fillText('The Boss', cx, cy + r + 6 * dpr);
     ctx.textBaseline = 'alphabetic';
 
     // ── Poison indicator ──────────────────────────────────────────────────
