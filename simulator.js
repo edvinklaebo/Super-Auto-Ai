@@ -535,4 +535,21 @@ function formatNumber(n) {
     render();
   });
 
+  // ── Config getter for playtest tab ─────────────────────────────────────────
+  // Exposes a snapshot of current simulator parameters so playtest.js can
+  // read them without sharing mutable state.
+  window.getSimConfig = function () {
+    return {
+      hitDamage:         state.hitDamage,
+      attackRate:        state.attackRate,
+      poisonChance:      state.poisonChance,
+      poisonDuration:    state.poisonDuration,
+      poisonScaling:     state.poisonScaling,
+      dotMultiplier:     state.dotMultiplier,
+      increasedDot:      state.increasedDot,
+      increasedDuration: state.increasedDuration,
+      deterministic:     state.deterministic,
+    };
+  };
+
 })();

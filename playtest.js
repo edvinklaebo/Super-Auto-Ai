@@ -15,14 +15,15 @@
   const PLAYER_RADIUS = 16;         // logical px
   const ENEMY_RADIUS  = 48;         // logical px
   const ENEMY_MAX_HP  = 50_000;
-  const ATTACK_DPS    = 500;        // damage / second while in range
   const ATTACK_RANGE  = 120;        // logical px, centre-to-centre
-  const SWING_RATE    = 5;          // radians / second (arc animation speed)
+  const ATTACK_ARC    = 0.85;       // half-angle (radians) of the attack cone
   const MAX_FRAME_DT  = 0.1;        // seconds; caps dt to avoid spiral-of-death after tab sleeps
   const ARC_BASE_ALPHA  = 0.30;     // base opacity of the attack cone
   const ARC_PULSE_AMT   = 0.20;     // additional opacity added by pulsing sine wave
   const ARC_PULSE_FREQ  = 3;        // pulse cycles per swing revolution
   const RANGE_CIRCLE_ALPHA = 0.10;  // opacity of the dashed attack-range indicator
+  const POISON_ALPHA_PER_STACK = 0.025; // alpha added per active stack (green tint on boss)
+  const POISON_ALPHA_MAX       = 0.40;  // maximum alpha for the green poison tint overlay
 
   // ── Canvas / context ───────────────────────────────────────────────────────
   const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById('playtestCanvas'));
@@ -40,6 +41,14 @@
   let lastTime  = 0;
   let dpr       = 1;
 
+  // ── Playtest poison state ──────────────────────────────────────────────────
+  /** @type {SimState|null} - live poison simulation for the playtest boss */
+  let ptSimState       = null;
+  let ptHitAccumulator = 0;   // fractional hit accumulator (mirrors simulator logic)
+  let ptPoisonDps      = 0;   // current total poison DPS on the boss
+  let ptStackCount     = 0;   // current active poison stack count
+  let ptFacingBoss     = false; // true when attacking AND boss is inside the attack arc
+
   // ── Input ──────────────────────────────────────────────────────────────────
   const keys    = {};
   let mouseX    = 0;   // logical canvas coordinates
@@ -51,6 +60,30 @@
   function logW() { return canvas.width  / dpr; }
   /** @returns {number} logical height of the canvas */
   function logH() { return canvas.height / dpr; }
+
+  // ── Poison tick helper ─────────────────────────────────────────────────────
+  /**
+   * Advance the boss poison state by dt seconds.
+   * Expires stale buckets and returns the current total DPS + stack count.
+   * Called every frame regardless of whether the player is attacking, so
+   * poisons keep ticking until they naturally expire.
+   * @param {number} dt
+   * @returns {{ totalDps: number, stackCount: number }}
+   */
+  function tickBossPoisons(dt) {
+    ptSimState.time += dt;
+    const currentFrame = Math.round(ptSimState.time / DT);
+    let totalDps = 0, stackCount = 0;
+    for (const [frame, bucket] of ptSimState.poisonBuckets) {
+      if (frame <= currentFrame) {
+        ptSimState.poisonBuckets.delete(frame);
+      } else {
+        totalDps   += bucket.totalDps;
+        stackCount += bucket.count;
+      }
+    }
+    return { totalDps, stackCount };
+  }
 
   // ── Canvas resize ──────────────────────────────────────────────────────────
   function resizeCanvas() {
@@ -73,6 +106,14 @@
     isAttacking = false;
     mouseDown   = false;
     Object.keys(keys).forEach(k => { keys[k] = false; });
+
+    // Initialise playtest poison state from current simulator parameters
+    ptHitAccumulator = 0;
+    ptPoisonDps      = 0;
+    ptStackCount     = 0;
+    ptFacingBoss     = false;
+    const cfg = window.getSimConfig ? window.getSimConfig() : {};
+    ptSimState = createState(cfg);
   }
 
   // ── Input event listeners ──────────────────────────────────────────────────
@@ -117,21 +158,62 @@
   function update(dt) {
     if (enemy.dead) return;
 
+    // ── Sync playtest with current simulator parameters ──────────────────────
+    const cfg        = window.getSimConfig ? window.getSimConfig() : {};
+    const attackRate = cfg.attackRate || 3.5;
+
+    if (ptSimState) {
+      ptSimState.hitDamage         = cfg.hitDamage         || 500;
+      ptSimState.poisonChance      = cfg.poisonChance      || 1.0;
+      ptSimState.poisonDuration    = cfg.poisonDuration    || 2.0;
+      ptSimState.poisonScaling     = cfg.poisonScaling     || 0.30;
+      ptSimState.dotMultiplier     = cfg.dotMultiplier     || 1.0;
+      ptSimState.increasedDot      = cfg.increasedDot      || 0.0;
+      ptSimState.increasedDuration = cfg.increasedDuration || 0.0;
+      ptSimState.deterministic     = cfg.deterministic     || false;
+    }
+
     isAttacking = mouseDown;
 
     if (isAttacking) {
       // ── Attacking: face cursor, animate swing, deal damage ────────────────
-      player.facing    = Math.atan2(mouseY - player.y, mouseX - player.x);
-      player.swingAngle = (player.swingAngle + SWING_RATE * dt) % (Math.PI * 2);
+      player.facing = Math.atan2(mouseY - player.y, mouseX - player.x);
 
-      const dist = Math.hypot(enemy.x - player.x, enemy.y - player.y);
-      if (dist <= ATTACK_RANGE + ENEMY_RADIUS) {
-        enemy.hp = Math.max(0, enemy.hp - ATTACK_DPS * dt);
-        if (enemy.hp <= 0) { enemy.hp = 0; enemy.dead = true; }
+      // Scale swing animation speed to APS (one full revolution = one attack)
+      const swingRate = Math.PI * 2 * attackRate;
+      player.swingAngle = (player.swingAngle + swingRate * dt) % (Math.PI * 2);
+
+      // Range check
+      const dist    = Math.hypot(enemy.x - player.x, enemy.y - player.y);
+      const inRange = dist <= ATTACK_RANGE + ENEMY_RADIUS;
+
+      // Directional check: is the enemy centre inside the attack arc?
+      const angleToEnemy = Math.atan2(enemy.y - player.y, enemy.x - player.x);
+      // Wrap the angle difference into [-π, π] so |angleDiff| correctly
+      // represents the shortest angular distance between the two directions.
+      let angleDiff = angleToEnemy - player.facing;
+      angleDiff = ((angleDiff + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
+      ptFacingBoss = inRange && Math.abs(angleDiff) <= ATTACK_ARC;
+
+      // Accumulate hits using the same fractional method as the simulator
+      ptHitAccumulator += attackRate * dt;
+      const hits = Math.floor(ptHitAccumulator);
+      ptHitAccumulator -= hits;
+
+      for (let i = 0; i < hits; i++) {
+        if (ptFacingBoss) {
+          // Direct hit damage (scales with simulator Hit Damage param)
+          enemy.hp = Math.max(0, enemy.hp - (cfg.hitDamage || 500));
+          if (enemy.hp <= 0) { enemy.hp = 0; enemy.dead = true; break; }
+          // Apply a poison stack via the simulator engine
+          if (ptSimState) tryApplyPoison(ptSimState);
+        }
       }
     } else {
       // ── Moving: WASD / arrow keys ─────────────────────────────────────────
       player.swingAngle = 0;
+      ptHitAccumulator  = 0;
+      ptFacingBoss      = false;
 
       let vx = 0, vy = 0;
       if (keys['KeyW'] || keys['ArrowUp'])    vy -= 1;
@@ -146,6 +228,18 @@
         const w = logW(), h = logH();
         player.x = Math.max(PLAYER_RADIUS, Math.min(w - PLAYER_RADIUS, player.x + vx * PLAYER_SPEED * dt));
         player.y = Math.max(PLAYER_RADIUS, Math.min(h - PLAYER_RADIUS, player.y + vy * PLAYER_SPEED * dt));
+      }
+    }
+
+    // ── Tick poison every frame (poisons expire naturally, even when idle) ──
+    if (ptSimState) {
+      const { totalDps, stackCount } = tickBossPoisons(dt);
+      ptPoisonDps  = totalDps;
+      ptStackCount = stackCount;
+
+      if (ptPoisonDps > 0 && !enemy.dead) {
+        enemy.hp = Math.max(0, enemy.hp - ptPoisonDps * dt);
+        if (enemy.hp <= 0) { enemy.hp = 0; enemy.dead = true; }
       }
     }
   }
@@ -262,6 +356,31 @@
     ctx.textBaseline = 'top';
     ctx.fillText('Patchwork Golem', cx, cy + r + 6 * dpr);
     ctx.textBaseline = 'alphabetic';
+
+    // ── Poison indicator ──────────────────────────────────────────────────
+    if (ptStackCount > 0) {
+      // Green tint over the body proportional to stack count
+      ctx.save();
+      ctx.globalAlpha = Math.min(POISON_ALPHA_MAX, ptStackCount * POISON_ALPHA_PER_STACK);
+      ctx.shadowColor = '#6abf3e';
+      ctx.shadowBlur  = 18 * dpr;
+      ctx.fillStyle   = '#6abf3e';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Stack count + DPS text below the name tag
+      ctx.fillStyle    = '#6abf3e';
+      ctx.font         = `${9 * dpr}px 'Segoe UI', sans-serif`;
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText(
+        `☠ ${ptStackCount} stack${ptStackCount !== 1 ? 's' : ''}  ·  ${formatNumber(ptPoisonDps)}/s`,
+        cx, cy + r + 20 * dpr
+      );
+      ctx.textBaseline = 'alphabetic';
+    }
   }
 
   function drawPlayer() {
@@ -270,8 +389,7 @@
 
     // ── Swing arc (drawn before the player body) ───────────────────────────
     if (isAttacking) {
-      const arcR     = ATTACK_RANGE * dpr * 0.7;
-      const halfSweep = 0.85;
+      const arcR = ATTACK_RANGE * dpr * 0.7;
 
       // Filled cone
       ctx.save();
@@ -282,7 +400,7 @@
       ctx.fillStyle = grad;
       ctx.beginPath();
       ctx.moveTo(cx, cy);
-      ctx.arc(cx, cy, arcR, player.facing - halfSweep, player.facing + halfSweep);
+      ctx.arc(cx, cy, arcR, player.facing - ATTACK_ARC, player.facing + ATTACK_ARC);
       ctx.closePath();
       ctx.fill();
       ctx.restore();
@@ -292,7 +410,7 @@
       ctx.globalAlpha = 0.75;
       ctx.strokeStyle = '#ffe082';
       ctx.lineWidth   = 2.5 * dpr;
-      const swingOff  = Math.sin(player.swingAngle * 2) * halfSweep * 0.9;
+      const swingOff  = Math.sin(player.swingAngle * 2) * ATTACK_ARC * 0.9;
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.lineTo(
@@ -353,7 +471,7 @@
     const status = enemy.dead
       ? '✓ Enemy defeated! Press Restart to play again.'
       : isAttacking
-        ? '⚔ Attacking'
+        ? (ptFacingBoss ? '⚔ Attacking' : '⚔ Attacking — turn to face boss')
         : '↕ Moving';
 
     ctx.fillText(
