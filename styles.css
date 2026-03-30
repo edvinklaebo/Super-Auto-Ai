@@ -112,6 +112,36 @@ h1 {
   text-align: right;
 }
 
+.param-value-input {
+  font-size: 0.82rem;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  width: 72px;
+  text-align: right;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 1px 4px;
+  outline: none;
+  /* Hide browser spin buttons */
+  -moz-appearance: textfield;
+}
+
+.param-value-input::-webkit-outer-spin-button,
+.param-value-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.param-value-input:hover {
+  border-color: var(--border);
+}
+
+.param-value-input:focus {
+  border-color: var(--accent);
+  background: #252525;
+}
+
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;

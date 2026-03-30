@@ -27,7 +27,7 @@
     <div class="param">
       <div class="param-header">
         <label class="param-label" for="sDamage">Hit Damage</label>
-        <span class="param-value" id="sDamageVal">500</span>
+        <input type="number" class="param-value-input" id="sDamageVal" min="50" max="5000" step="10" value="500" />
       </div>
       <input type="range" id="sDamage"
              min="50" max="5000" step="10" value="500" />
@@ -38,7 +38,7 @@
     <div class="param">
       <div class="param-header">
         <label class="param-label" for="sRate">Attack Rate</label>
-        <span class="param-value" id="sRateVal">3.50 APS</span>
+        <input type="number" class="param-value-input" id="sRateVal" min="0.5" max="12" step="0.25" value="3.5" />
       </div>
       <input type="range" id="sRate"
              min="0.5" max="12" step="0.25" value="3.5" />
@@ -49,7 +49,7 @@
     <div class="param">
       <div class="param-header">
         <label class="param-label" for="sChance">Poison Chance</label>
-        <span class="param-value" id="sChanceVal">100%</span>
+        <input type="number" class="param-value-input" id="sChanceVal" min="0" max="100" step="1" value="100" />
       </div>
       <input type="range" id="sChance"
              min="0" max="1" step="0.01" value="1" />
@@ -60,7 +60,7 @@
     <div class="param">
       <div class="param-header">
         <label class="param-label" for="sDuration">Poison Duration</label>
-        <span class="param-value" id="sDurationVal">2.0s</span>
+        <input type="number" class="param-value-input" id="sDurationVal" min="0.5" max="12" step="0.1" value="2" />
       </div>
       <input type="range" id="sDuration"
              min="0.5" max="12" step="0.1" value="2" />
@@ -71,7 +71,7 @@
     <div class="param">
       <div class="param-header">
         <label class="param-label" for="sScaling">Poison Scaling</label>
-        <span class="param-value" id="sScalingVal">30%</span>
+        <input type="number" class="param-value-input" id="sScalingVal" min="5" max="150" step="1" value="30" />
       </div>
       <input type="range" id="sScaling"
              min="0.05" max="1.5" step="0.01" value="0.3" />
@@ -84,7 +84,7 @@
     <div class="param">
       <div class="param-header">
         <label class="param-label" for="sDotMult">DoT Multiplier</label>
-        <span class="param-value" id="sDotMultVal">1.00x</span>
+        <input type="number" class="param-value-input" id="sDotMultVal" min="1" max="6" step="0.05" value="1" />
       </div>
       <input type="range" id="sDotMult"
              min="1" max="6" step="0.05" value="1" />
@@ -95,7 +95,7 @@
     <div class="param">
       <div class="param-header">
         <label class="param-label" for="sIncreasedDot">Increased DoT</label>
-        <span class="param-value" id="sIncreasedDotVal">+0%</span>
+        <input type="number" class="param-value-input" id="sIncreasedDotVal" min="0" max="600" step="5" value="0" />
       </div>
       <input type="range" id="sIncreasedDot"
              min="0" max="6" step="0.05" value="0" />
@@ -106,7 +106,7 @@
     <div class="param">
       <div class="param-header">
         <label class="param-label" for="sIncreasedDur">Increased Duration</label>
-        <span class="param-value" id="sIncreasedDurVal">+0%</span>
+        <input type="number" class="param-value-input" id="sIncreasedDurVal" min="0" max="300" step="5" value="0" />
       </div>
       <input type="range" id="sIncreasedDur"
              min="0" max="3" step="0.05" value="0" />
