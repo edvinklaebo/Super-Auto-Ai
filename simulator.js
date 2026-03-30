@@ -5,10 +5,11 @@
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 /**
- * @typedef {{ dps: number; remaining: number; }} PoisonInstance
+ * @typedef {{ totalDps: number; count: number; }} PoisonBucket
  *
  * @typedef {{
- *   poisons: PoisonInstance[];
+ *   poisonBuckets: Map<number, PoisonBucket>;
+ *   poisonProcAccumulator: number;
  *   time: number;
  *   hitAccumulator: number;
  *   totalHits: number;
@@ -18,6 +19,10 @@
  *   poisonChance: number;
  *   poisonDuration: number;
  *   poisonScaling: number;
+ *   dotMultiplier: number;
+ *   increasedDot: number;
+ *   increasedDuration: number;
+ *   deterministic: boolean;
  * }} SimState
  */
 
@@ -35,29 +40,69 @@ const HISTORY_FRAMES  = Math.round(HISTORY_SECONDS / DT);
  */
 function createState(config = {}) {
   return {
-    poisons: [],
+    poisonBuckets: new Map(),
+    poisonProcAccumulator: 0,
     time: 0,
     hitAccumulator: 0,
     totalHits: 0,
     // defaults match PoE feel
-    hitDamage:    500,
-    attackRate:   3.5,
-    poisonChance: 1.0,
-    poisonDuration: 2.0,
-    poisonScaling:  0.30,
+    hitDamage:         500,
+    attackRate:        3.5,
+    poisonChance:      1.0,
+    poisonDuration:    2.0,
+    poisonScaling:     0.30,
+    dotMultiplier:     1.0,
+    increasedDot:      0.0,
+    increasedDuration: 0.0,
+    deterministic:     false,
     ...config,
   };
 }
 
 /**
+ * Apply a single poison stack to the simulation state.
+ * Calculates DPS using full DoT scaling layers and buckets the stack
+ * by its expiration frame for O(1) amortised expiry.
+ * @param {SimState} state
+ */
+function applyPoisonStack(state) {
+  const base     = state.hitDamage * state.poisonScaling;
+  const dps      = base * (1 + state.increasedDot) * state.dotMultiplier;
+  const duration = state.poisonDuration * (1 + state.increasedDuration);
+
+  // Key by expiration frame number to avoid per-instance O(n) ticking.
+  const expirationFrame = Math.round((state.time + duration) / DT);
+  const existing = state.poisonBuckets.get(expirationFrame);
+  if (existing) {
+    existing.totalDps += dps;
+    existing.count++;
+  } else {
+    state.poisonBuckets.set(expirationFrame, { totalDps: dps, count: 1 });
+  }
+  state.totalHits++;
+}
+
+/**
  * Attempt to apply a poison stack on a hit.
+ * In deterministic mode uses an expected-proc accumulator (no Math.random);
+ * in stochastic mode rolls normally.
  * @param {SimState} state
  */
 function tryApplyPoison(state) {
-  if (Math.random() > state.poisonChance) return;
-  const dps = state.hitDamage * state.poisonScaling;
-  state.poisons.push({ dps, remaining: state.poisonDuration });
-  state.totalHits++;
+  if (state.deterministic) {
+    // Accumulate expected procs; apply whole procs immediately.
+    // Cap contribution per hit at 1 to match the one-stack-per-hit rule.
+    state.poisonProcAccumulator += Math.min(1, state.poisonChance);
+    const wholeProcs = Math.floor(state.poisonProcAccumulator);
+    state.poisonProcAccumulator -= wholeProcs;
+    for (let i = 0; i < wholeProcs; i++) {
+      applyPoisonStack(state);
+    }
+  } else {
+    if (Math.random() <= state.poisonChance) {
+      applyPoisonStack(state);
+    }
+  }
 }
 
 /**
@@ -80,19 +125,21 @@ function update(state) {
     tryApplyPoison(state);
   }
 
-  // ── Tick poisons ─────────────────────────────────────────────────────────
-  let totalDps = 0;
-  for (let i = state.poisons.length - 1; i >= 0; i--) {
-    const p = state.poisons[i];
-    p.remaining -= DT;
-    if (p.remaining <= 0) {
-      state.poisons.splice(i, 1);
+  // ── Tick poisons (O(buckets) expiry, not O(stacks)) ──────────────────────
+  // Buckets are keyed by expiration frame; delete expired ones in one pass.
+  const currentFrame = Math.round(state.time / DT);
+  let totalDps   = 0;
+  let stackCount = 0;
+  for (const [frame, bucket] of state.poisonBuckets) {
+    if (frame <= currentFrame) {
+      state.poisonBuckets.delete(frame);
     } else {
-      totalDps += p.dps;
+      totalDps   += bucket.totalDps;
+      stackCount += bucket.count;
     }
   }
 
-  return { totalDps, stackCount: state.poisons.length };
+  return { totalDps, stackCount };
 }
 
 // ── Rolling history buffer ────────────────────────────────────────────────────
@@ -331,11 +378,14 @@ function formatNumber(n) {
 
   // ── Sliders ────────────────────────────────────────────────────────────────
   const sliders = [
-    { id: 'sDamage',   key: 'hitDamage',      fmt: v => Math.round(v).toString() },
-    { id: 'sRate',     key: 'attackRate',      fmt: v => v.toFixed(2) + ' APS' },
-    { id: 'sChance',   key: 'poisonChance',    fmt: v => Math.round(v * 100) + '%' },
-    { id: 'sDuration', key: 'poisonDuration',  fmt: v => v.toFixed(1) + 's' },
-    { id: 'sScaling',  key: 'poisonScaling',   fmt: v => (v * 100).toFixed(0) + '%' },
+    { id: 'sDamage',       key: 'hitDamage',         fmt: v => Math.round(v).toString() },
+    { id: 'sRate',         key: 'attackRate',         fmt: v => v.toFixed(2) + ' APS' },
+    { id: 'sChance',       key: 'poisonChance',       fmt: v => Math.round(v * 100) + '%' },
+    { id: 'sDuration',     key: 'poisonDuration',     fmt: v => v.toFixed(1) + 's' },
+    { id: 'sScaling',      key: 'poisonScaling',      fmt: v => (v * 100).toFixed(0) + '%' },
+    { id: 'sDotMult',      key: 'dotMultiplier',      fmt: v => v.toFixed(2) + 'x' },
+    { id: 'sIncreasedDot', key: 'increasedDot',       fmt: v => '+' + Math.round(v * 100) + '%' },
+    { id: 'sIncreasedDur', key: 'increasedDuration',  fmt: v => '+' + Math.round(v * 100) + '%' },
   ];
 
   sliders.forEach(({ id, key, fmt }) => {
@@ -352,6 +402,17 @@ function formatNumber(n) {
       display.textContent = fmt(raw);
     });
   });
+
+  // ── Deterministic toggle ───────────────────────────────────────────────────
+  const chkDeterministic = /** @type {HTMLInputElement} */ (document.getElementById('chkDeterministic'));
+  if (chkDeterministic) {
+    chkDeterministic.checked = state.deterministic;
+    chkDeterministic.addEventListener('change', () => {
+      state.deterministic = chkDeterministic.checked;
+      // Reset the proc accumulator so we start fresh with the new mode.
+      state.poisonProcAccumulator = 0;
+    });
+  }
 
   // ── Tooltip on canvas hover ────────────────────────────────────────────────
   const tooltip = document.getElementById('tooltip');
@@ -441,11 +502,15 @@ function formatNumber(n) {
     pauseSim();
     // Preserve config, reset state
     const cfg = {
-      hitDamage:      state.hitDamage,
-      attackRate:     state.attackRate,
-      poisonChance:   state.poisonChance,
-      poisonDuration: state.poisonDuration,
-      poisonScaling:  state.poisonScaling,
+      hitDamage:         state.hitDamage,
+      attackRate:        state.attackRate,
+      poisonChance:      state.poisonChance,
+      poisonDuration:    state.poisonDuration,
+      poisonScaling:     state.poisonScaling,
+      dotMultiplier:     state.dotMultiplier,
+      increasedDot:      state.increasedDot,
+      increasedDuration: state.increasedDuration,
+      deterministic:     state.deterministic,
     };
     state   = createState(cfg);
     history = createHistory();
