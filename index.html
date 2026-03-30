@@ -72,6 +72,52 @@
       <span class="param-desc">% of hit damage dealt as poison DPS (base: 30%)</span>
     </div>
 
+    <div class="panel-title" style="margin-top:14px;">DoT Scaling</div>
+
+    <!-- DoT Multiplier -->
+    <div class="param">
+      <div class="param-header">
+        <label class="param-label" for="sDotMult">DoT Multiplier</label>
+        <span class="param-value" id="sDotMultVal">1.00x</span>
+      </div>
+      <input type="range" id="sDotMult"
+             min="1" max="3" step="0.05" value="1" />
+      <span class="param-desc">Damage over Time multiplier (e.g. from support gems)</span>
+    </div>
+
+    <!-- Increased DoT -->
+    <div class="param">
+      <div class="param-header">
+        <label class="param-label" for="sIncreasedDot">Increased DoT</label>
+        <span class="param-value" id="sIncreasedDotVal">+0%</span>
+      </div>
+      <input type="range" id="sIncreasedDot"
+             min="0" max="3" step="0.05" value="0" />
+      <span class="param-desc">Additive % increased Damage over Time</span>
+    </div>
+
+    <!-- Increased Duration -->
+    <div class="param">
+      <div class="param-header">
+        <label class="param-label" for="sIncreasedDur">Increased Duration</label>
+        <span class="param-value" id="sIncreasedDurVal">+0%</span>
+      </div>
+      <input type="range" id="sIncreasedDur"
+             min="0" max="3" step="0.05" value="0" />
+      <span class="param-desc">Additive % increased Poison Duration</span>
+    </div>
+
+    <!-- Deterministic mode -->
+    <div class="param" style="margin-top:10px;">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+        <input type="checkbox" id="chkDeterministic" />
+        <span class="param-label" style="margin:0;">Deterministic Mode</span>
+      </label>
+      <span class="param-desc" style="margin-top:4px; display:block;">
+        Replace random rolls with expected-value proc accumulation — ideal for comparing builds
+      </span>
+    </div>
+
     <!-- Buttons -->
     <div class="sim-controls">
       <button class="btn" id="btnRun">▶ Run</button>
@@ -83,7 +129,8 @@
       <div class="panel-title" style="margin-bottom:8px;">PoE Mechanics</div>
       <p style="font-size:0.7rem; color:#7a6f5a; line-height:1.6;">
         Each hit applies <em style="color:#9acd32">at most one</em> poison stack.
-        Base poison DPS = 30% of combined Physical &amp; Chaos damage.
+        Poison DPS = hit damage × scaling × (1 + increased DoT) × DoT multiplier.
+        Duration = base duration × (1 + increased duration).
         Poison stacks are unlimited. Only Chaos resistance mitigates poison damage.
       </p>
     </div>
