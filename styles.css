@@ -265,7 +265,77 @@ canvas {
   color: var(--accent);
 }
 
-/* ── Tooltip ────────────────────────────────────────────── */
+/* ── Tabs ────────────────────────────────────────────────── */
+.tab-nav {
+  display: flex;
+  gap: 4px;
+  max-width: 1100px;
+  margin: 0 auto 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab-btn {
+  padding: 8px 22px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--font);
+  font-size: 0.82rem;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  position: relative;
+  bottom: -1px;
+}
+
+.tab-btn:hover {
+  background: #252525;
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.tab-btn.active {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--accent2);
+}
+
+.tab-panel.hidden {
+  display: none;
+}
+
+/* ── Playtest ────────────────────────────────────────────── */
+.playtest-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+#playtestCanvas {
+  display: block;
+  width: 100%;
+  height: 560px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #0a0a0a;
+  cursor: crosshair;
+}
+
+.playtest-controls {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.playtest-hint {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-top: 8px;
+  letter-spacing: 0.04em;
+}
+
 #tooltip {
   position: fixed;
   padding: 5px 9px;
