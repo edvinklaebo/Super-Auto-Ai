@@ -23,6 +23,7 @@
  *   increasedDot: number;
  *   increasedDuration: number;
  *   deterministic: boolean;
+ *   bossHp: number;
  * }} SimState
  */
 
@@ -58,6 +59,7 @@ function createState(config = {}) {
     increasedDot:      0.0,
     increasedDuration: 0.0,
     deterministic:     false,
+    bossHp:            50_000,
     ...config,
   };
 }
@@ -400,6 +402,7 @@ function formatNumber(n) {
   const elStacks  = document.getElementById('statStacks');
   const elTime    = document.getElementById('statTime');
   const elHits    = document.getElementById('statHits');
+  const elTtk     = document.getElementById('statTtk');
 
   // ── Sliders ────────────────────────────────────────────────────────────────
   const sliders = [
@@ -436,6 +439,37 @@ function formatNumber(n) {
       state.deterministic = chkDeterministic.checked;
       // Reset the proc accumulator so we start fresh with the new mode.
       state.poisonProcAccumulator = 0;
+    });
+  }
+
+  // ── Boss HP preset ─────────────────────────────────────────────────────────
+  const sBossPreset   = document.getElementById('sBossPreset');
+  const sBossCustomHp = /** @type {HTMLInputElement} */ (document.getElementById('sBossCustomHp'));
+
+  function syncBossHpDisplay() {
+    if (!sBossPreset) return;
+    const isCustom = sBossPreset.value === 'custom';
+    if (sBossCustomHp) sBossCustomHp.style.display = isCustom ? 'block' : 'none';
+  }
+
+  function readBossHp() {
+    if (sBossPreset && sBossPreset.value === 'custom') {
+      return Math.max(1, parseInt(sBossCustomHp ? sBossCustomHp.value : '50000', 10) || 50_000);
+    }
+    return sBossPreset ? (parseInt(sBossPreset.value, 10) || 50_000) : 50_000;
+  }
+
+  if (sBossPreset) {
+    syncBossHpDisplay();
+    sBossPreset.addEventListener('change', () => {
+      syncBossHpDisplay();
+      state.bossHp = readBossHp();
+    });
+  }
+
+  if (sBossCustomHp) {
+    sBossCustomHp.addEventListener('input', () => {
+      state.bossHp = readBossHp();
     });
   }
 
@@ -502,6 +536,16 @@ function formatNumber(n) {
     if (elStacks) elStacks.textContent = lastStacks.toString();
     if (elTime)   elTime.textContent   = state.time.toFixed(1) + 's';
     if (elHits)   elHits.textContent   = state.totalHits.toString();
+    if (elTtk) {
+      if (lastDps > 0 && state.bossHp > 0) {
+        const ttk = state.bossHp / lastDps;
+        elTtk.textContent = ttk >= 3600 ? '≥1 h'
+          : ttk >= 60  ? (ttk / 60).toFixed(1) + 'm'
+          :               ttk.toFixed(1) + 's';
+      } else {
+        elTtk.textContent = '—';
+      }
+    }
   }
 
   // ── Buttons ────────────────────────────────────────────────────────────────
@@ -536,6 +580,7 @@ function formatNumber(n) {
       increasedDot:      state.increasedDot,
       increasedDuration: state.increasedDuration,
       deterministic:     state.deterministic,
+      bossHp:            state.bossHp,
     };
     state   = createState(cfg);
     history = createHistory();
@@ -574,6 +619,7 @@ function formatNumber(n) {
       increasedDot:      state.increasedDot,
       increasedDuration: state.increasedDuration,
       deterministic:     state.deterministic,
+      bossHp:            state.bossHp,
     };
   };
 

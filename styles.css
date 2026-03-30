@@ -196,11 +196,15 @@ input[type="range"]::-moz-range-thumb {
 /* ── Stats ──────────────────────────────────────────────── */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 10px;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 900px) {
+  .stats-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 540px) {
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
@@ -230,6 +234,44 @@ input[type="range"]::-moz-range-thumb {
 .stat-card.stacks .stat-value { color: var(--stack-color); }
 .stat-card.hits .stat-value   { color: #7ec8e3; }
 .stat-card.time .stat-value   { color: #b0a090; }
+.stat-card.ttk .stat-value    { color: #e8a020; }
+
+/* ── Boss HP controls ───────────────────────────────────── */
+.param-select {
+  width: 100%;
+  background: #1a1a1a;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  outline: none;
+  margin-top: 4px;
+}
+
+.param-select:focus,
+.param-select:hover {
+  border-color: var(--accent);
+}
+
+.param-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: #1a1a1a;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 0.78rem;
+  outline: none;
+  margin-top: 6px;
+}
+
+.param-input:focus,
+.param-input:hover {
+  border-color: var(--accent);
+}
 
 /* ── Canvas area ────────────────────────────────────────── */
 .graphs {
