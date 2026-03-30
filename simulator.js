@@ -30,6 +30,9 @@
 const DT = 1 / 60;                // fixed timestep (seconds)
 const HISTORY_SECONDS = 12;       // rolling buffer length
 const HISTORY_FRAMES  = Math.round(HISTORY_SECONDS / DT);
+// PoE stores damage as a 32-bit integer; the maximum representable value
+// divided by the 60 Hz tick rate gives the effective DoT cap (~35.8 M DPS).
+const DOT_CAP = Math.floor((2 ** 31 - 1) / 60); // 35_791_394
 
 // ── Simulation ────────────────────────────────────────────────────────────────
 
@@ -138,6 +141,9 @@ function update(state) {
       stackCount += bucket.count;
     }
   }
+
+  // PoE clamps total DoT to the 32-bit integer limit (~35.8 M DPS).
+  totalDps = Math.min(totalDps, DOT_CAP);
 
   return { totalDps, stackCount };
 }
@@ -316,6 +322,25 @@ function drawGraph(canvas, h, simTime) {
   ctx.setLineDash([4 * dpr, 3 * dpr]);
   ctx.stroke();
   ctx.setLineDash([]);
+
+  // ── DoT cap reference line ───────────────────────────────────────────────
+  if (DOT_CAP <= maxDps) {
+    const capY = pad.top + gH * (1 - DOT_CAP / maxDps);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(220,60,60,0.7)';
+    ctx.lineWidth   = 1 * dpr;
+    ctx.setLineDash([6 * dpr, 4 * dpr]);
+    ctx.beginPath();
+    ctx.moveTo(pad.left, capY);
+    ctx.lineTo(pad.left + gW, capY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(220,60,60,0.85)';
+    ctx.font      = `${9 * dpr}px 'Segoe UI', sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.fillText('DoT cap', pad.left + 4 * dpr, capY - 3 * dpr);
+    ctx.restore();
+  }
 
   // ── Legend ───────────────────────────────────────────────────────────────
   const lx = pad.left + 8 * dpr;
