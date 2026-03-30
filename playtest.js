@@ -14,7 +14,6 @@
   const PLAYER_SPEED  = 220;        // logical px / second
   const PLAYER_RADIUS = 16;         // logical px
   const ENEMY_RADIUS  = 48;         // logical px
-  const ENEMY_MAX_HP  = 50_000;
   const ATTACK_RANGE  = 120;        // logical px, centre-to-centre
   const ATTACK_ARC    = 0.85;       // half-angle (radians) of the attack cone
   const MAX_FRAME_DT  = 0.1;        // seconds; caps dt to avoid spiral-of-death after tab sleeps
@@ -101,18 +100,23 @@
   function initGame() {
     resizeCanvas();
     const w = logW(), h = logH();
-    player = { x: w * 0.25, y: h * 0.50, facing: 0, swingAngle: 0 };
-    enemy  = { x: w * 0.70, y: h * 0.50, hp: ENEMY_MAX_HP, dead: false };
+
+    // Read boss HP from current simulator config
+    const cfg = window.getSimConfig ? window.getSimConfig() : {};
+    const enemyMaxHp = (cfg.bossHp && cfg.bossHp > 0) ? cfg.bossHp : 50_000;
+
+    // Reset all game state
+    player      = { x: w * 0.25, y: h * 0.50, facing: 0, swingAngle: 0 };
+    enemy       = { x: w * 0.70, y: h * 0.50, hp: enemyMaxHp, maxHp: enemyMaxHp, dead: false };
     isAttacking = false;
     mouseDown   = false;
     Object.keys(keys).forEach(k => { keys[k] = false; });
 
-    // Initialise playtest poison state from current simulator parameters
+    // Initialise playtest poison state
     ptHitAccumulator = 0;
     ptPoisonDps      = 0;
     ptStackCount     = 0;
     ptFacingBoss     = false;
-    const cfg = window.getSimConfig ? window.getSimConfig() : {};
     ptSimState = createState(cfg);
   }
 
@@ -331,7 +335,7 @@
     ctx.fillStyle = '#1a0000';
     ctx.fillRect(barX, barY, barW, barH);
 
-    const pct      = enemy.hp / ENEMY_MAX_HP;
+    const pct      = enemy.hp / enemy.maxHp;
     const hpColor  = pct > 0.5 ? '#c0392b' : pct > 0.25 ? '#e67e22' : '#f39c12';
     ctx.fillStyle  = hpColor;
     ctx.fillRect(barX, barY, barW * pct, barH);
@@ -346,7 +350,7 @@
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'bottom';
     ctx.fillText(
-      `${Math.ceil(enemy.hp).toLocaleString()} / ${ENEMY_MAX_HP.toLocaleString()} HP`,
+      `${Math.ceil(enemy.hp).toLocaleString()} / ${enemy.maxHp.toLocaleString()} HP`,
       cx, barY - 2 * dpr
     );
 
