@@ -11,6 +11,12 @@
 <h1>☠ Poison Simulator</h1>
 <p class="subtitle">Path of Exile – Poison Mechanics</p>
 
+<div class="tab-nav">
+  <button class="tab-btn active" data-tab="simulator">☠ Simulator</button>
+  <button class="tab-btn" data-tab="playtest">⚔ Playtest</button>
+</div>
+
+<div class="tab-panel" id="panelSimulator">
 <div class="app">
 
   <!-- ── Controls ─────────────────────────────────────────────────────── -->
@@ -176,9 +182,23 @@
 
   </div><!-- /graphs -->
 </div><!-- /app -->
+</div><!-- /panelSimulator -->
+
+<div class="tab-panel hidden" id="panelPlaytest">
+  <div class="playtest-wrap">
+    <canvas id="playtestCanvas"></canvas>
+    <div class="playtest-controls">
+      <button class="btn" id="btnPlaytestRestart">↺ Restart</button>
+    </div>
+    <p class="playtest-hint">
+      WASD — Move &nbsp;|&nbsp; Hold Left Click — Attack &nbsp;|&nbsp; Cannot move while attacking
+    </p>
+  </div>
+</div><!-- /panelPlaytest -->
 
 <div id="tooltip"></div>
 
 <script src="simulator.js"></script>
+<script src="playtest.js"></script>
 </body>
 </html>
